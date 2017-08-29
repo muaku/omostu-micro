@@ -9,6 +9,11 @@ var port = new SerialPort('/dev/ttyUSB0', {
 
 /* READ data */
 port.on("data", function(data) {
-	console.log("Data: ", data)
+	extractData(data)
 })
 
+/* EXTRACT data */
+var extractData = function(data) {
+	console.log("Data: ", data)
+	//var type = 
+}
