@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "buffer-split": "^1.0.0",
+    "cron": "^1.2.1",
+    "fluent-logger": "^2.4.1",
     "serialport": "^5.0.0"
   }
 }
