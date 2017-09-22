@@ -29,7 +29,7 @@ const TYPE2 = {
 	DATA_END_INDEX: 3
 }
 const TYPE3 = {
-	VAL: 2,
+	VAL: 3,
 	LEN: 14,
 	DATA_LEN: 2,
 	/* INDEX AFTER REMOVING 'PRE' BUFFER */
@@ -37,7 +37,7 @@ const TYPE3 = {
 	DATA_END_INDEX: 3
 }
 const TYPE9 = {
-	VAL: 2,
+	VAL: 9,
 	LEN: 14,
 	DATA_LEN: 2,
 	/* INDEX AFTER REMOVING 'PRE' BUFFER */
@@ -45,7 +45,7 @@ const TYPE9 = {
 	DATA_END_INDEX: 4
 }
 const TYPE10 = {
-	VAL: 2,
+	VAL: 10,
 	LEN: 14,
 	DATA_LEN: 2,
 	/* INDEX AFTER REMOVING 'PRE' BUFFER */
@@ -65,7 +65,7 @@ fluentd.configure("microsensor", {
 })
 
 /* OPEN PORT ON MAC OR RASPI */
-const portNumber = (process.platform == "darwin") ? '/dev/tty.usbserial-A1044Y1Q' : '/dev/ttyUSB1'
+const portNumber = (process.platform == "darwin") ? '/dev/tty.usbserial-A403NI9D' : '/dev/ttyUSB1'
 const port = new SerialPort(portNumber, {
 	baudRate: 115200
 }, function(err) {
@@ -76,39 +76,47 @@ const port = new SerialPort(portNumber, {
 
 /* READ data */
 var buffer = Buffer.from([])
+var lenToDelete = 0
 port.on("data", function(chunk) {
 	buffer = Buffer.concat([buffer, chunk])
 	var datas = bsplit(buffer,PRE)
+	var datas_len = datas.length 
 	
 	// datas[0] is empty 
-	if(datas.length > 2) {
-		extractData(datas[1])	// should use child process
+	if(datas_len > 2) {
+		lenToDelete = 0
+		for (i=1; i<= datas_len-2; i++)	{	// first&last elementを含まない
+			var type = datas[i].readUIntBE(0,1)	// GET type
+			extractData(type, datas[i])	// should use child process
+			/* bufferの利用した分を消す */
+			if(i===datas_len-2) {
+				buffer = buffer.slice(lenToDelete)
+			}
+		}
 	}
 })
 
 /* EXTRACT data */
-const extractData = function(data) {
-	 var type = data.readUIntBE(0,1)	// GET type
-
+const extractData = function(type, data) {
 	 switch(type) {
 		 case 1:
-			buffer = buffer.slice(TYPE1.LEN)
+			lenToDelete += TYPE1.LEN
 			break
 		 case 2:
-			buffer = buffer.slice(TYPE2.LEN)
+			lenToDelete += TYPE2.LEN
 			var heart = data.readUIntBE(TYPE2.DATA_START_INDEX, 1)	// Read 1 byte
 			DATA_TO_FLUENTD["heart"] = heart
 			break
 		 case 3:
-			buffer = buffer.slice(TYPE3.LEN)
+			lenToDelete += TYPE3.LEN
 			var breath = data.readUIntBE(TYPE3.DATA_START_INDEX, 1)
 			DATA_TO_FLUENTD["breath"] = breath
 			break
 		 case 9:
-			  buffer = buffer.slice(TYPE9.LEN)
+			  lenToDelete += TYPE9.LEN
 			break
 		 case 10:
-			  buffer = buffer.slice(TYPE10.LEN)
+			  lenToDelete += TYPE10.LEN
 			break
 		 default:
 		  	console.log("TYPE is out of range")
