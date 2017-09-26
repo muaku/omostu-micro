@@ -1,0 +1,3 @@
+[submodule "Omron_D6T-44L-06_Test_with_RasPi"]
+	path = Omron_D6T-44L-06_Test_with_RasPi
+	url = https://github.com/nobuyukioishi/Omron_D6T-44L-06_Test_with_RasPi.git
