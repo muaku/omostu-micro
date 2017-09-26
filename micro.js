@@ -3,6 +3,7 @@ const fs = require("fs")
 const fluentd = require('fluent-logger');
 const bsplit = require('buffer-split')
 var CronJob = require('cron').CronJob;
+var moment = require('moment');
 
 /* DEFINE */
 const PRE = Buffer.from([0x80, 0x00, 0x80, 0x00,0x80, 0x00,0x80, 0x00]);
@@ -107,16 +108,18 @@ const extractData = function(type, data) {
 		 case 2:
 			lenToDelete += TYPE2.LEN
 			var heart = data.readUIntBE(TYPE2.DATA_START_INDEX, 1)	// Read 1 byte
+			var accuracy = data.readUIntBE(TYPE2.DATA_START_INDEX + 1, 1)
 			DATA_TO_FLUENTD["heart"] = heart
 			fluentd.emit("heart", {"heart": heart})
-			console.log('data to fluentd HEART: ', heart)
+			console.log('data to fluentd HEART: ', heart, ' accuracy: ', accuracy)
 			break
 		 case 3:
 			lenToDelete += TYPE3.LEN
 			var breath = data.readUIntBE(TYPE3.DATA_START_INDEX, 1)
+			var accuracy = data.readUIntBE(TYPE3.DATA_START_INEX + 1, 1)
 			DATA_TO_FLUENTD["breath"] = breath
 			fluentd.emit("breath", {"breath": breath})
-			console.log('data to fluentd BREATH: ', breath)
+			console.log('data to fluentd BREATH: ', breath, 'accuracy: ', accuracy)
 			break
 		 case 9:
 			  lenToDelete += TYPE9.LEN
@@ -124,7 +127,7 @@ const extractData = function(type, data) {
 		 case 10:
 			lenToDelete += TYPE10.LEN
 			var motion = data.readInt16BE(TYPE3.DATA_START_INDEX, 2)
-			console.log('motion:', motion)  
+			console.log(moment().format('hh:mm:ss'), ' motion: ', motion)  
 			break
 		 default:
 		  	console.log("TYPE is out of range")
