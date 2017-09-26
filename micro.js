@@ -50,7 +50,7 @@ const TYPE10 = {
 	DATA_LEN: 2,
 	/* INDEX AFTER REMOVING 'PRE' BUFFER */
 	DATA_START_INDEX: 2,
-	DATA_END_INDEX: 3
+	DATA_END_INDEX: 4
 }
 
  /* DATA TO PASS TO Fluentd */
@@ -65,7 +65,7 @@ fluentd.configure("microsensor", {
 })
 
 /* OPEN PORT ON MAC OR RASPI */
-const portNumber = (process.platform == "darwin") ? '/dev/tty.usbserial-A403NI9D' : '/dev/ttyUSB1'
+const portNumber = (process.platform == "darwin") ? '/dev/tty.usbserial-A403NI9D' : '/dev/ttyUSB0'
 const port = new SerialPort(portNumber, {
 	baudRate: 115200
 }, function(err) {
@@ -96,6 +96,8 @@ port.on("data", function(chunk) {
 	}
 })
 
+
+var DATA = {}
 /* EXTRACT data */
 const extractData = function(type, data) {
 	 switch(type) {
@@ -106,30 +108,25 @@ const extractData = function(type, data) {
 			lenToDelete += TYPE2.LEN
 			var heart = data.readUIntBE(TYPE2.DATA_START_INDEX, 1)	// Read 1 byte
 			DATA_TO_FLUENTD["heart"] = heart
+			fluentd.emit("heart", {"heart": heart})
+			console.log('data to fluentd HEART: ', heart)
 			break
 		 case 3:
 			lenToDelete += TYPE3.LEN
 			var breath = data.readUIntBE(TYPE3.DATA_START_INDEX, 1)
 			DATA_TO_FLUENTD["breath"] = breath
+			fluentd.emit("breath", {"breath": breath})
+			console.log('data to fluentd BREATH: ', breath)
 			break
 		 case 9:
 			  lenToDelete += TYPE9.LEN
 			break
 		 case 10:
-			  lenToDelete += TYPE10.LEN
+			lenToDelete += TYPE10.LEN
+			var motion = data.readInt16BE(TYPE3.DATA_START_INDEX, 2)
+			console.log('motion:', motion)  
 			break
 		 default:
 		  	console.log("TYPE is out of range")
 	 }
 }
-
-/* RUN EVERY 10 SEC */
-var Job = new CronJob('*/10 * * * * *', function() {
-	console.log("RUN EVERY 10 SEC ", Date())
-	// IF there is data then send it to fluentd
-	if(typeof(DATA_TO_FLUENTD["heart"]) != "undefined" & typeof(DATA_TO_FLUENTD["breath"]) != "undefined"){
-		console.log("DATA_TO_FLUENTD: ", DATA_TO_FLUENTD)
-		fluentd.emit("micro", DATA_TO_FLUENTD)
-		console.log("*----------------------------------------------* ")
-	}
-}).start()
