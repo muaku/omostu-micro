@@ -7,4 +7,5 @@
 > sudo npm install
 
 # 2. 実行方法：
+USB ポートを指定：（Default：MacBook '/dev/tty.usbserial-A403NI9D', RaspberryPi: '/dev/ttyUSB0'）
 > npm start または node micro.js
