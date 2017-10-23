@@ -7,4 +7,4 @@
 > sudo npm install
 
 # 2. 実行方法：
-npm start または node micro を実行する
+> npm start または node micro.js
