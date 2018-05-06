@@ -1,10 +1,11 @@
 const SerialPort = require('serialport');
 const fs = require("fs")
-const fluentd = require('fluent-logger');
 const bsplit = require('buffer-split')
+const mqtt = require('mqtt')
+var client = mqtt.connect('mqtt://localhost');
 var CronJob = require('cron').CronJob;
-
-
+require("./db/mongoose")
+const sensor = require("./db/models").sensor
 
 /* DEFINE */
 const PRE = Buffer.from([0x80, 0x00, 0x80, 0x00,0x80, 0x00,0x80, 0x00]);
@@ -56,15 +57,18 @@ const TYPE10 = {
 }
 
  /* DATA TO PASS TO Fluentd */
-var DATA_TO_FLUENTD = {}
+var SENSOR_DATA = {}
 
-/* FLUENTD CONFIG */
-fluentd.configure("microsensor", {
-  host: "localhost",
-  port: 24224,
-  timeout: 3.0,
-  reconnectInterval: 600000 // 10 min
+/* MQTT */
+client.on('connect', function () {
+  client.subscribe('ondo')
 })
+client.on('message', function (topic, message) {
+  // message is Buffer
+  console.log("ondo: ", message)
+  SENSOR_DATA["ondo"] = message
+})
+
 
 /* OPEN PORT ON MAC OR RASPI */
 const portNumber = (process.platform == "darwin") ? '/dev/tty.usbserial-A403NI9D' : '/dev/ttyUSB0'
@@ -107,14 +111,14 @@ const extractData = function(type, data) {
      case 2:
       lenToDelete += TYPE2.LEN
       var heart = data.readUIntBE(TYPE2.DATA_START_INDEX, 1)  // Read 1 byte
-      DATA_TO_FLUENTD["heart"] = heart
+      SENSOR_DATA["heart"] = heart
       // fluentd.emit("heart", {"heart": heart})
       console.log('data to fluentd HEART: ', heart)
       break
      case 3:
       lenToDelete += TYPE3.LEN
       var breath = data.readUIntBE(TYPE3.DATA_START_INDEX, 1)
-      DATA_TO_FLUENTD["breath"] = breath
+      SENSOR_DATA["breath"] = breath
       // fluentd.emit("breath", {"breath": breath})
       console.log('data to fluentd BREATH: ', breath)
       break
@@ -124,7 +128,7 @@ const extractData = function(type, data) {
      case 10:
       lenToDelete += TYPE10.LEN
       var motion = data.readInt16BE(TYPE3.DATA_START_INDEX, 2)
-      DATA_TO_FLUENTD["motion"] = motion
+      SENSOR_DATA["motion"] = motion
       console.log('motion:', motion)  
       break
      default:
@@ -132,10 +136,12 @@ const extractData = function(type, data) {
    }
 }
 
-/* RUN EVERY 5 SEC */
-var Job = new CronJob('*/5 * * * * *', function() {
-  console.log("RUN EVERY 5 SEC ", Date())
-  console.log("DATA_TO_FLUENTD: ", DATA_TO_FLUENTD)
-  fluentd.emit("data", DATA_TO_FLUENTD)
-  console.log("*----------------------------------------------* ")
+/* RUN EVERY 1 SEC */
+var Job = new CronJob('*/1 * * * * *', function() {
+  SENSOR_DATA["created_at"] = Date.now()
+  // TODO: store data into db
+  console.log("SENSOR_DATA: ", SENSOR_DATA)
+  // sensor.save(SENSOR_DATA, (err) => {
+  //   console.log(err)
+  // })
 }).start()
