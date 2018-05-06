@@ -1,11 +1,11 @@
-const SerialPort = require('serialport');
+// const SerialPort = require('serialport');
 const fs = require("fs")
 const bsplit = require('buffer-split')
 const mqtt = require('mqtt')
-var client = mqtt.connect('mqtt://localhost');
+var client = mqtt.connect('mqtt://192.168.0.24');
 var CronJob = require('cron').CronJob;
 require("./db/mongoose")
-const sensor = require("./db/models").sensor
+var sensor = require("./db/models").sensor
 
 // /* DEFINE */
 // const PRE = Buffer.from([0x80, 0x00, 0x80, 0x00,0x80, 0x00,0x80, 0x00]);
@@ -65,14 +65,14 @@ client.on('connect', function () {
 })
 client.on('message', function (topic, message) {
   // message is Buffer
-  console.log("ondo: ", message)
-  SENSOR_DATA["ondo"] = message
+  console.log("ondo: ", message.toString())
+  SENSOR_DATA["ondo"] = parseFloat(message.toString())
   /* TODO: delete these line when use microsensor */
   SENSOR_DATA["created_at"] = Date.now()
   // TODO: store data into db
   console.log("SENSOR_DATA: ", SENSOR_DATA)
-  sensor.save(SENSOR_DATA, (err) => {
-    console.log(err)
+  sensor.create(SENSOR_DATA, (err) => {
+    if(err) console.log(err)
   })
 })
 
