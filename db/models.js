@@ -2,7 +2,7 @@ const mongoose = require("mongoose")
 const Schema = mongoose.Schema
 
 /* Apartment Schema */
-const sensor = new Schema({
+const sensor_schema = new Schema({
     ondo:Number,
     heart: Number,
     breath: Number,
@@ -10,7 +10,7 @@ const sensor = new Schema({
     created_at: String
 })
 
-const sensor = mongoose.model("sensor", sensor, "sensor")
+const sensor = mongoose.model("sensor", sensor_schema, "sensor")
 
 /* Export Models */
 module.exports = {
